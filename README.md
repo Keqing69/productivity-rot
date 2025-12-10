@@ -1,7 +1,7 @@
 # ProductivityRot 🧠📱
 
-Automatisches Dopamin-Management beim Vibe-Coding.
-Öffnet TikTok (Safari) automatisch, wenn die KI (ChatGPT/Gemini) arbeitet, und killt es sofort, wenn die Antwort da ist.
+Automatic dopamine management during vibe-coding.
+Automatically opens TikTok (Safari) when the AI (ChatGPT/Gemini) is processing, and kills it the moment the answer arrives.
 
 ## Setup
 1. `pip install pyautogui opencv-python`
