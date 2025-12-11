@@ -3,65 +3,74 @@ import subprocess
 import time
 import sys
 
-# --- KONFIGURATION ---
-TRIGGER_IMAGE = "trigger.png"     # Dein Screenshot vom Stop-Button
-CONFIDENCE = 0.8                  # 0.8 = Toleranz für Bildvergleich
-CHECK_INTERVAL = 0.5              # Check alle 0.5 Sekunden
-TIKTOK_URL = "https://www.tiktok.com"
-BROWSER_APP = "Safari"            # Wir zielen auf Safari
-# ---------------------
+# --- DEINE GEMESSENEN WERTE ---
+CHECK_X = 1258
+CHECK_Y = 899
 
-def is_safari_running():
-    try:
-        # Pgrep prüft, ob der Safari-Prozess läuft
-        subprocess.check_output(["pgrep", "-x", BROWSER_APP])
-        return True
-    except subprocess.CalledProcessError:
-        return False
+# Deine "Stop"-Farbe (KI arbeitet)
+# Wir nutzen exakt deine Werte
+TARGET_COLOR = (30, 31, 32) 
+
+# Da 30 und 19 sehr nah beieinander liegen, darf die Toleranz fast Null sein.
+# Wir erlauben maximal 2 Punkte Abweichung.
+TOLERANCE = 2
+# ------------------------------
+
+# Settings
+TIKTOK_URL = "https://www.tiktok.com"
+BROWSER_APP = "Safari"
+SECOND_MONITOR_OFFSET = 2000 
+CHECK_INTERVAL = 0.5
 
 def open_tiktok():
-    # Wir öffnen Safari nur, wenn es nicht eh schon offen ist (um Spam zu vermeiden)
-    if not is_safari_running():
-        print(f"🧠 KI arbeitet -> 🚀 Starte Safari mit TikTok")
+    try:
+        subprocess.check_output(["pgrep", "-x", BROWSER_APP])
+    except:
+        print(f"\n🚀 TARGET ERKANNT ({TARGET_COLOR}) -> TikTok auf")
         subprocess.run(["open", "-a", BROWSER_APP, TIKTOK_URL])
+        time.sleep(0.5)
+        try:
+            cmd = f'tell application "System Events" to set position of front window of process "{BROWSER_APP}" to {{{SECOND_MONITOR_OFFSET}, 0}}'
+            subprocess.run(["osascript", "-e", cmd])
+        except:
+            pass
 
 def kill_safari():
-    # Gnadenloser Kill Command
-    if is_safari_running():
-        print(f"✅ KI fertig -> 💀 Kille Safari")
-        subprocess.run(["pkill", "-x", BROWSER_APP])
+    try:
+        subprocess.check_output(["pgrep", "-x", BROWSER_APP])
+        print(f"\n🛑 FARBE WEG -> TikTok zu")
+        subprocess.run(["killall", BROWSER_APP])
+    except:
+        pass
 
 def start_rot():
-    print(f"--- PROJECT PRODUCTIVITY ROT (SAFARI EDITION) ---")
-    print(f"Suche nach Stop-Button in '{TRIGGER_IMAGE}'...")
-    print("Drücke STRG+C zum Beenden.")
-
-    was_working = False
+    print(f"--- EXACT COORDINATE MODE ---")
+    print(f"Überwache: {CHECK_X}, {CHECK_Y}")
+    print(f"Suche Farbe: {TARGET_COLOR}")
+    print("-----------------------------")
 
     while True:
         try:
-            # Suche das Stop-Symbol auf dem Screen
-            # confidence=0.8 braucht 'opencv-python' library
-            location = pyautogui.locateOnScreen(TRIGGER_IMAGE, confidence=CONFIDENCE, grayscale=True)
+            # Wir prüfen exakt deine Werte
+            matches = pyautogui.pixelMatchesColor(CHECK_X, CHECK_Y, TARGET_COLOR, tolerance=TOLERANCE)
 
-            if location:
-                # KI ARBEITET (Symbol gefunden)
-                if not was_working:
-                    open_tiktok()
-                    was_working = True
+            if matches:
+                # Treffer!
+                sys.stdout.write(f"\r[🧠 WORKING] Farbe stimmt exakt.   ")
+                sys.stdout.flush()
+                open_tiktok()
             else:
-                # KI FERTIG (Symbol weg)
-                if was_working:
-                    kill_safari()
-                    was_working = False
+                # Kein Treffer
+                sys.stdout.write(f"\r[✅ IDLE] Farbe ist anders.       ")
+                sys.stdout.flush()
+                kill_safari()
 
             time.sleep(CHECK_INTERVAL)
 
         except KeyboardInterrupt:
-            print("\n👋 Ende.")
+            print("\nBye.")
             sys.exit()
-        except Exception as e:
-            # Fehler ignorieren (z.B. wenn Bild kurz nicht gefunden wird)
+        except Exception:
             pass
 
 if __name__ == "__main__":
